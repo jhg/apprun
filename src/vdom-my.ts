@@ -131,9 +131,9 @@ function createText(node) {
 function create(node: VNode | string, isSvg = false): Element {
   console.assert(node !== null && node !== undefined);
   // console.log('create', node, typeof node);
-
   if (typeof node === "string") return createText(node);
   if (!node.tag || (typeof node.tag === 'function')) return createText(JSON.stringify(node));
+  if (node.tag === 'comment') return document.createComment((node.props && node.props['text']) || '');
   isSvg = isSvg || node.tag === "svg";
   const element = isSvg
     ? document.createElementNS("http://www.w3.org/2000/svg", node.tag)
@@ -192,4 +192,80 @@ function updateProps(element: Element, props: {}) {
 
 export function Fragment(props, ...children): any[] {
   return collect(children);
+}
+
+
+export function replace(id: string, nodes: VNode | VNode[]) {
+
+  const treeWalker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_ALL,
+    { acceptNode: function (node) { return NodeFilter.FILTER_ACCEPT; } },
+    false
+  );
+
+  let start = false;
+  let stop = false;
+  let node2;
+  const nodeList = [];
+
+  while (treeWalker.nextNode()) {
+    if (treeWalker.currentNode.nodeValue === `${id}_0`) start = true;
+    else if (treeWalker.currentNode.nodeValue === `${id}_1`) {
+      node2 = treeWalker.currentNode;
+      stop = true;
+    }
+    if (start && treeWalker.currentNode.nodeType !== Node.COMMENT_NODE) nodeList.push(treeWalker.currentNode);
+    if (stop) break;
+  }
+
+  const children = Array.isArray(nodes) ? nodes : [nodes];
+
+  const len = Math.min(nodeList.length, children.length);
+  for (let i = 0; i < len; i++) {
+    const child = children[i];
+    const el = nodeList[i];
+    if (typeof child === 'string') {
+      if (el.textContent !== child) {
+        if (el.nodeType === 3) {
+          el.textContent = child
+        } else {
+          el.parentNode.replaceChild(createText(child), el);
+        }
+      }
+    } else {
+      const key = child.props && child.props['key'];
+      if (key) {
+        if (el.key === key) {
+          update(nodeList[i], child);
+        } else {
+          const old = keyCache[key];
+          if (old) {
+            el.parentNode.insertBefore(old, el);
+            el.parentNode.appendChild(el);
+            update(nodeList[i], child);
+          } else {
+            el.parentNode.insertBefore(create(child), el);
+          }
+        }
+      } else {
+        update(nodeList[i], child);
+      }
+    }
+  }
+
+  let n = nodeList.length;
+  while (n > len) {
+    const element = nodeList[--n];
+    element.parentNode.removeChild(element);
+  }
+
+  if (children.length > len) {
+    const d = document.createDocumentFragment();
+    for (let i = len; i < children.length; i++) {
+      d.appendChild(create(children[i]));
+    }
+    node2.parentNode.insertBefore(d, node2);
+  }
+
 }
