@@ -1,7 +1,10 @@
 import { createElement, updateElement, Fragment } from './vdom-my';
+// tslint:disable-next-line:no-implicit-dependencies
 import morphdom from 'morphdom';
+// tslint:disable-next-line:no-implicit-dependencies
+import { render, TemplateResult } from 'lit-html';
 
-export function render(element, html, parent?) {
+function update(element, html, parent?) {
   if (typeof html === 'string') {
     html = html.trim();
     if (element.firstChild) {
@@ -11,9 +14,11 @@ export function render(element, html, parent?) {
     } else {
       element.innerHTML = html;
     }
+  } else if (html instanceof TemplateResult) {
+    render(html, element);
   } else {
     updateElement(element, html, parent);
   }
 }
-export { createElement, Fragment };
+export { createElement, Fragment, update as render };
 

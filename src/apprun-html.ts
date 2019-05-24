@@ -7,3 +7,6 @@ app.Fragment = Fragment;
 
 export default app;
 export { app, Component, View, Action, Update, on, update };
+
+// tslint:disable-next-line:no-implicit-dependencies
+export { html } from 'lit-html';
