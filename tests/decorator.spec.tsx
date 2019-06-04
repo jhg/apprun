@@ -100,5 +100,11 @@ describe('Update decorator', () => {
     test.run('test');
   })
 
+  it('should support this in @customElement', () => {
+    @customElement('my-app')
+    class TestComponent extends Component {
+    }
+  });
+
 
 })
