@@ -1,4 +1,4 @@
-import app, { Component, on, update, event } from '../src/apprun';
+import app, { Component, on, update, event, customElement, reactive } from '../src/apprun';
 
 describe('Update decorator', () => {
 
@@ -105,6 +105,21 @@ describe('Update decorator', () => {
     class TestComponent extends Component {
     }
   });
+
+  it('should support this in @reactive', () => {
+
+    @reactive
+    class TestComponent extends Component {
+      state = { num: 0 }
+      view = state => state.num
+    }
+
+    const element = document.createElement('div');
+    const test = new TestComponent();
+    test.start(element);
+    test.state.num = 1;
+    expect(element.innerHTML).toBe('1');
+  })
 
 
 })
